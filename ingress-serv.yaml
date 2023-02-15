@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: scales-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+  - hosts:
+    - mysite.com
+    secretName: tls-secret
+  rules:
+  - host: mysite.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: identity-srv
+            port: 
+              number: 80
+        pathType: Prefix
+        path: /
+      

@@ -1,0 +1,105 @@
+version: '3.7'
+
+services:
+  postgres-srv:
+    restart: unless-stopped
+    image: postgres:latest
+    container_name: postgres-srv
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=gfhfpbn0101
+      - POSTGRES_DB=scalesdb
+    ports:
+      - 5432:5432
+    networks:
+      - scales-network
+
+  redis-srv:
+    restart: unless-stopped
+    image: redis/redis-stack-server
+    container_name: redis-srv
+    ports:
+      - 6379:6379
+    networks:
+      - scales-network
+
+  rabbit-srv:
+    restart: unless-stopped
+    image: rabbitmq:3-management
+    container_name: rabbit-srv
+    ports:
+      - 5672:5672
+    networks:
+      - scales-network
+
+  identity-api:
+    restart: unless-stopped
+    image: denis227/scales-identity
+    container_name: identity-api
+    ports:
+      - 5010:80
+      - 5001:443
+    depends_on:
+      - postgres-srv
+    environment:
+      - CONNECTIONSTRINGS__DEFAULT=User ID=postgres;Password=gfhfpbn0101;Host=postgres-srv;Port=5432;Database=scalesdb
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=secret123
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/www.denisscales.ru_custom_1.pfx
+    volumes:
+      - /var/www/httpd-cert/www-root/:/https:ro
+    networks:
+      - scales-network
+
+  journal-api:
+    restart: unless-stopped
+    image: denis227/scales-journal
+    container_name: journal-api
+    ports:
+      - 5012:80
+      - 5002:443
+    depends_on:
+      - postgres-srv
+      - redis-srv
+      - rabbit-srv
+    environment:
+      - CONNECTIONSTRINGS__DEFAULT=User ID=postgres;Password=gfhfpbn0101;Host=postgres-srv;Port=5432;Database=scalesdb
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=secret123
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/www.denisscales.ru_custom_1.pfx
+      # - CONNECTIONSTRINGS__REDISCONNECTION=redis-srv:6379
+      # - RABBITMQ__HOSTNAME=rabbit-srv
+      # - RABBITMQ__PORT=5672
+    volumes:
+      - /var/www/httpd-cert/www-root/:/https:ro
+    networks:
+      - scales-network
+
+  reference-api:
+    restart: unless-stopped
+    image: denis227/scales-reference
+    container_name: reference-api
+    ports:
+      - 5013:80
+      - 5003:443
+    depends_on:
+      - postgres-srv
+      - redis-srv
+      - rabbit-srv
+    environment:
+      - CONNECTIONSTRINGS__DEFAULT=User ID=postgres;Password=gfhfpbn0101;Host=postgres-srv;Port=5432;Database=scalesdb
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=secret123
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/www.denisscales.ru_custom_1.pfx
+      # - CONNECTIONSTRINGS__REDISCONNECTION=redis-srv:6379
+      # - RABBITMQ__HOSTNAME=rabbit-srv
+      # - RABBITMQ__PORT=5672
+    volumes:
+      - /var/www/httpd-cert/www-root/:/https:ro
+    networks:
+      - scales-network
+    
+
+networks:
+  scales-network:
+    driver: bridge
